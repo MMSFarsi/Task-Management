@@ -72,21 +72,24 @@ const Home = () => {
 
   const handleTaskEdit = (task) => {
     setEditTask(task);
-    setNewTask(task);
-
+    setNewTask({ title: task.title, description: task.description, category: task.category });
   };
 
   const handleTaskUpdate = async (e) => {
     e.preventDefault();
+    if (!editTask) return;
+
     try {
-      const response = await axios.put(`${API_URL}/${editTask._id}`, newTask);
-      setTasks(tasks.map((task) => (task._id === editTask._id ? response.data : task)));
+      await axios.put(`${API_URL}/${editTask._id}`, newTask);
+
+      setTasks(tasks.map((task) => (task._id === editTask._id ? { ...task, ...newTask } : task)));
+
       setNewTask({ title: "", description: "", category: "To-Do" });
       setEditTask(null);
-      toast.success("Task Updated")
-
+      toast.success("Task Updated!");
     } catch (error) {
       console.error("Error updating task:", error);
+      toast.error("Failed to update task.");
     }
   };
 
