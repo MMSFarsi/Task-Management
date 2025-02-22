@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../Components/Navbar";
-import { DndContext,closestCorners,
-useSensor,useSensors, PointerSensor,} from "@dnd-kit/core";
-import { SortableContext,verticalListSortingStrategy, arrayMove,} from "@dnd-kit/sortable";
+import { DndContext, closestCorners, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import TaskCol from "../Components/TaskCol";
 
 const API_URL = "https://task-manager-server-side-delta.vercel.app/tasks";
@@ -12,6 +11,7 @@ const Home = () => {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: "", description: "", category: "To-Do" });
   const [editTask, setEditTask] = useState(null);
+  const [user, setUser] = useState(null); // Store user state here
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -32,7 +32,7 @@ const Home = () => {
     if (!over) return;
 
     const draggedTaskId = active.id;
-    const newCategory = over.data.current?.category; // Target category
+    const newCategory = over.data.current?.category; 
     const oldTask = tasks.find((t) => t._id === draggedTaskId);
 
     if (!oldTask || !newCategory) return;
@@ -44,7 +44,6 @@ const Home = () => {
       const updatedTasks = arrayMove(filteredTasks, oldIndex, newIndex);
       setTasks([...tasks.filter((t) => t.category !== newCategory), ...updatedTasks]);
     } else {
-
       const updatedTasks = tasks.map((task) =>
         task._id === draggedTaskId ? { ...task, category: newCategory } : task
       );
@@ -102,54 +101,40 @@ const Home = () => {
 
   return (
     <div>
-      <Navbar />
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-3 gap-4">
-          {["To-Do", "In Progress", "Done"].map((category) => (
-            <SortableContext key={category}items={tasks.filter((t) => t.category === category)}
-              strategy={verticalListSortingStrategy}
-            >
-              <TaskCol category={category}tasks={tasks.filter((t) => t.category === category)}
-                onEdit={handleTaskEdit}
-                onDelete={handleTaskDelete}
-              />
-            </SortableContext>
-          ))}
-        </div>
-      </DndContext>
+      <Navbar setUser={setUser} user={user} />
 
-      <form onSubmit={editTask ? handleTaskUpdate : handleTaskSubmit} className="mb-4 bg-white p-4 rounded-lg shadow-md">
-        <h3 className="text-lg font-bold mb-2">{editTask ? "Edit Task" : "Add a New Task"}</h3>
-        <input
-          type="text"
-          name="title"
-          value={newTask.title}
-          onChange={handleTaskChange}
-          placeholder="Task Title"
-          className="w-full p-2 border rounded mb-2"
-          required
-        />
-        <textarea
-          name="description"
-          value={newTask.description}
-          onChange={handleTaskChange}
-          placeholder="Task Description (Optional)"
-          className="w-full p-2 border rounded mb-2"
-        ></textarea>
-        <select
-          name="category"
-          value={newTask.category}
-          onChange={handleTaskChange}
-          className="w-full p-2 border rounded mb-2"
-        >
-          <option value="To-Do">To-Do</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Done">Done</option>
-        </select>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-          {editTask ? "Update Task" : "Add Task"}
-        </button>
-      </form>
+      {user && (
+        <form onSubmit={editTask ? handleTaskUpdate : handleTaskSubmit} className="mb-4 bg-white p-4 rounded-lg shadow-md">
+          <h3 className="text-lg font-bold mb-2">{editTask ? "Edit Task" : "Add a New Task"}</h3>
+          <input type="text" name="title" value={newTask.title} onChange={handleTaskChange} placeholder="Task Title" className="w-full p-2 border rounded mb-2" required />
+          <textarea name="description" value={newTask.description} onChange={handleTaskChange} placeholder="Task Description (Optional)" className="w-full p-2 border rounded mb-2"></textarea>
+          <select name="category" value={newTask.category} onChange={handleTaskChange} className="w-full p-2 border rounded mb-2">
+            <option value="To-Do">To-Do</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Done">Done</option>
+          </select>
+          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">{editTask ? "Update Task" : "Add Task"}</button>
+        </form>
+      )}
+
+      {user ? (
+  <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+    <div className="grid grid-cols-3 gap-4">
+      {["To-Do", "In Progress", "Done"].map((category) => (
+        <SortableContext key={category} items={tasks.filter((t) => t.category === category)} strategy={verticalListSortingStrategy}>
+          <TaskCol category={category} tasks={tasks.filter((t) => t.category === category)} onEdit={handleTaskEdit} onDelete={handleTaskDelete} />
+        </SortableContext>
+      ))}
+    </div>
+  </DndContext>
+) : (
+    <div className="flex items-center justify-center h-screen">
+    <h2 className="text-center text-2xl font-bold text-red-500">Please Login First</h2>
+  </div>)}
+
+
+  
+    
     </div>
   );
 };
