@@ -1,20 +1,33 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../Components/Navbar";
-import { DndContext, closestCorners, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCorners,
+  useSensor,
+  useSensors,
+  PointerSensor,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import TaskCol from "../Components/TaskCol";
 import Footer from "../Components/Footer";
-import toast, { Toaster } from 'react-hot-toast';
-
+import toast, { Toaster } from "react-hot-toast";
 
 const API_URL = "https://task-manager-server-side-delta.vercel.app/tasks";
 
 const Home = () => {
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState({ title: "", description: "", category: "To-Do" });
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    category: "To-Do",
+  });
   const [editTask, setEditTask] = useState(null);
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -33,38 +46,50 @@ const Home = () => {
   const onDragEnd = async (event) => {
     const { active, over } = event;
     if (!over) return;
-
+  
     const draggedTaskId = active.id;
-    const newCategory = over.data.current?.category; 
-    const oldTask = tasks.find((t) => t._id === draggedTaskId);
-
-    if (!oldTask || !newCategory) return;
-
-    if (oldTask.category === newCategory) {
-      const filteredTasks = tasks.filter((task) => task.category === newCategory);
-      const oldIndex = filteredTasks.findIndex((task) => task._id === draggedTaskId);
-      const newIndex = filteredTasks.findIndex((task) => task._id === over.id);
-      const updatedTasks = arrayMove(filteredTasks, oldIndex, newIndex);
-      setTasks([...tasks.filter((t) => t.category !== newCategory), ...updatedTasks]);
-    } else {
+    const overCategory = over.id;
+  
+    // Find the dragged task
+    const draggedTask = tasks.find((task) => task._id === draggedTaskId);
+    if (!draggedTask) return;
+  
+    // If the task was moved to a different category
+    if (draggedTask.category !== overCategory) {
       const updatedTasks = tasks.map((task) =>
-        task._id === draggedTaskId ? { ...task, category: newCategory } : task
+        task._id === draggedTaskId ? { ...task, category: overCategory } : task
       );
       setTasks(updatedTasks);
-
+  
       try {
-        await axios.put(`${API_URL}/${draggedTaskId}`, { category: newCategory });
+        await axios.put(`${API_URL}/${draggedTaskId}`, {
+          category: overCategory,
+        });
       } catch (error) {
         console.error("Error updating task category:", error);
       }
+    } else {
+      // If the task was just reordered within the same category
+      const filteredTasks = tasks.filter((task) => task.category === overCategory);
+      const oldIndex = filteredTasks.findIndex((task) => task._id === draggedTaskId);
+      const newIndex = filteredTasks.findIndex((task) => task._id === over.id);
+  
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const updatedTasks = arrayMove(filteredTasks, oldIndex, newIndex);
+        setTasks([
+          ...tasks.filter((t) => t.category !== overCategory),
+          ...updatedTasks,
+        ]);
+      }
     }
   };
+  
 
   const handleTaskDelete = async (id) => {
     try {
       await axios.delete(`${API_URL}/${id}`);
       setTasks(tasks.filter((task) => task._id !== id));
-      toast.success("Task Deleted")
+      toast.success("Task Deleted");
     } catch (error) {
       console.error("Error deleting task:", error);
     }
@@ -72,7 +97,11 @@ const Home = () => {
 
   const handleTaskEdit = (task) => {
     setEditTask(task);
-    setNewTask({ title: task.title, description: task.description, category: task.category });
+    setNewTask({
+      title: task.title,
+      description: task.description,
+      category: task.category,
+    });
   };
 
   const handleTaskUpdate = async (e) => {
@@ -81,9 +110,11 @@ const Home = () => {
 
     try {
       await axios.put(`${API_URL}/${editTask._id}`, newTask);
-
-      setTasks(tasks.map((task) => (task._id === editTask._id ? { ...task, ...newTask } : task)));
-
+      setTasks(
+        tasks.map((task) =>
+          task._id === editTask._id ? { ...task, ...newTask } : task
+        )
+      );
       setNewTask({ title: "", description: "", category: "To-Do" });
       setEditTask(null);
       toast.success("Task Updated!");
@@ -99,8 +130,7 @@ const Home = () => {
       const response = await axios.post(API_URL, newTask);
       setTasks([...tasks, response.data]);
       setNewTask({ title: "", description: "", category: "To-Do" });
-      toast.success("Task Added")
-
+      toast.success("Task Added");
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -112,50 +142,85 @@ const Home = () => {
   };
 
   return (
-    <div className="bg-[#D4CAE7]" >
-     <div className="py-2 px-2">
-     <Navbar setUser={setUser} user={user} />
-     </div>
-
-      <div className="px-10 mt-6">
-      {user && (
-        <form onSubmit={editTask ? handleTaskUpdate : handleTaskSubmit} className="mb-4 bg-white p-4 rounded-lg shadow-md">
-          <h3 className="text-lg font-bold mb-2">{editTask ? "Edit Task" : "Add a New Task"}</h3>
-          <input type="text" name="title" value={newTask.title} onChange={handleTaskChange} placeholder="Task Title" className="w-full p-2 border rounded mb-2" required />
-          <textarea name="description" value={newTask.description} onChange={handleTaskChange} placeholder="Task Description" className="w-full p-2 border rounded mb-2"></textarea>
-          <select name="category" value={newTask.category} onChange={handleTaskChange} className="w-full p-2 border rounded mb-2">
-            <option value="To-Do">To-Do</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Done">Done</option>
-          </select>
-          <button type="submit" className="bg-black text-white text-[10px] lg:text-base cursor-pointer font-semibold px-3 lg:px-5 py-2 lg:py-3 rounded-full">{editTask ? "Update Task" : "Add Task"}</button>
-        </form>
-      )}
-
-      {user ? (
-  <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {["To-Do", "In Progress", "Done"].map((category) => (
-        <SortableContext key={category} items={tasks.filter((t) => t.category === category)} strategy={verticalListSortingStrategy}>
-          <TaskCol category={category} tasks={tasks.filter((t) => t.category === category)} onEdit={handleTaskEdit} onDelete={handleTaskDelete} />
-        </SortableContext>
-      ))}
-    </div>
-  </DndContext>
-) : (
-    <div className="flex items-center justify-center h-screen">
-    <h2 className="text-center text-4xl font-bold text-black">Please Login First</h2>
-  </div>)}
+    <div className="bg-[#D4CAE7]">
+      <div className="py-2 px-2">
+        <Navbar setUser={setUser} user={user} />
       </div>
 
-      <Footer></Footer>
+      <div className="px-10 mt-6">
+        {user && (
+          <form
+            onSubmit={editTask ? handleTaskUpdate : handleTaskSubmit}
+            className="mb-4 bg-white p-4 rounded-lg shadow-md"
+          >
+            <h3 className="text-lg font-bold mb-2">
+              {editTask ? "Edit Task" : "Add a New Task"}
+            </h3>
+            <input
+              type="text"
+              name="title"
+              value={newTask.title}
+              onChange={handleTaskChange}
+              placeholder="Task Title"
+              className="w-full p-2 border rounded mb-2"
+              required
+            />
+            <textarea
+              name="description"
+              value={newTask.description}
+              onChange={handleTaskChange}
+              placeholder="Task Description"
+              className="w-full p-2 border rounded mb-2"
+            ></textarea>
+            <select
+              name="category"
+              value={newTask.category}
+              onChange={handleTaskChange}
+              className="w-full p-2 border rounded mb-2"
+            >
+              <option value="To-Do">To-Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+            <button
+              type="submit"
+              className="bg-black text-white text-[10px] lg:text-base cursor-pointer font-semibold px-3 lg:px-5 py-2 lg:py-3 rounded-full"
+            >
+              {editTask ? "Update Task" : "Add Task"}
+            </button>
+          </form>
+        )}
 
+        {user ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragEnd={onDragEnd}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {["To-Do", "In Progress", "Done"].map((category) => (
+                <TaskCol
+                  key={category}
+                  category={category}
+                  tasks={tasks.filter((t) => t.category === category)}
+                  onEdit={handleTaskEdit}
+                  onDelete={handleTaskDelete}
+                />
+              ))}
+            </div>
+          </DndContext>
+        ) : (
+          <div className="flex items-center justify-center h-screen">
+            <h2 className="text-center text-4xl font-bold text-black">
+              Please Login First
+            </h2>
+          </div>
+        )}
+      </div>
 
-  
+      <Footer />
       <Toaster />
-
     </div>
-    
   );
 };
 
