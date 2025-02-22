@@ -4,6 +4,7 @@ import Navbar from "../Components/Navbar";
 import { DndContext, closestCorners, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import TaskCol from "../Components/TaskCol";
+import Footer from "../Components/Footer";
 
 const API_URL = "https://task-manager-server-side-delta.vercel.app/tasks";
 
@@ -100,14 +101,17 @@ const Home = () => {
   };
 
   return (
-    <div>
-      <Navbar setUser={setUser} user={user} />
+    <div className="bg-[#D4CAE7]" >
+     <div className="py-2 px-2">
+     <Navbar setUser={setUser} user={user} />
+     </div>
 
+      <div className="px-10 mt-6">
       {user && (
         <form onSubmit={editTask ? handleTaskUpdate : handleTaskSubmit} className="mb-4 bg-white p-4 rounded-lg shadow-md">
           <h3 className="text-lg font-bold mb-2">{editTask ? "Edit Task" : "Add a New Task"}</h3>
           <input type="text" name="title" value={newTask.title} onChange={handleTaskChange} placeholder="Task Title" className="w-full p-2 border rounded mb-2" required />
-          <textarea name="description" value={newTask.description} onChange={handleTaskChange} placeholder="Task Description (Optional)" className="w-full p-2 border rounded mb-2"></textarea>
+          <textarea name="description" value={newTask.description} onChange={handleTaskChange} placeholder="Task Description" className="w-full p-2 border rounded mb-2"></textarea>
           <select name="category" value={newTask.category} onChange={handleTaskChange} className="w-full p-2 border rounded mb-2">
             <option value="To-Do">To-Do</option>
             <option value="In Progress">In Progress</option>
@@ -129,8 +133,11 @@ const Home = () => {
   </DndContext>
 ) : (
     <div className="flex items-center justify-center h-screen">
-    <h2 className="text-center text-2xl font-bold text-red-500">Please Login First</h2>
+    <h2 className="text-center text-4xl font-bold text-black">Please Login First</h2>
   </div>)}
+      </div>
+
+      <Footer></Footer>
 
 
   
