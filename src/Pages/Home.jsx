@@ -5,6 +5,8 @@ import { DndContext, closestCorners, useSensor, useSensors, PointerSensor } from
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import TaskCol from "../Components/TaskCol";
 import Footer from "../Components/Footer";
+import toast, { Toaster } from 'react-hot-toast';
+
 
 const API_URL = "https://task-manager-server-side-delta.vercel.app/tasks";
 
@@ -12,7 +14,7 @@ const Home = () => {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: "", description: "", category: "To-Do" });
   const [editTask, setEditTask] = useState(null);
-  const [user, setUser] = useState(null); // Store user state here
+  const [user, setUser] = useState(null); 
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -62,6 +64,7 @@ const Home = () => {
     try {
       await axios.delete(`${API_URL}/${id}`);
       setTasks(tasks.filter((task) => task._id !== id));
+      toast.success("Task Deleted")
     } catch (error) {
       console.error("Error deleting task:", error);
     }
@@ -70,6 +73,7 @@ const Home = () => {
   const handleTaskEdit = (task) => {
     setEditTask(task);
     setNewTask(task);
+
   };
 
   const handleTaskUpdate = async (e) => {
@@ -79,6 +83,8 @@ const Home = () => {
       setTasks(tasks.map((task) => (task._id === editTask._id ? response.data : task)));
       setNewTask({ title: "", description: "", category: "To-Do" });
       setEditTask(null);
+      toast.success("Task Updated")
+
     } catch (error) {
       console.error("Error updating task:", error);
     }
@@ -90,6 +96,8 @@ const Home = () => {
       const response = await axios.post(API_URL, newTask);
       setTasks([...tasks, response.data]);
       setNewTask({ title: "", description: "", category: "To-Do" });
+      toast.success("Task Added")
+
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -117,13 +125,13 @@ const Home = () => {
             <option value="In Progress">In Progress</option>
             <option value="Done">Done</option>
           </select>
-          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">{editTask ? "Update Task" : "Add Task"}</button>
+          <button type="submit" className="bg-black text-white text-[10px] lg:text-base cursor-pointer font-semibold px-3 lg:px-5 py-2 lg:py-3 rounded-full">{editTask ? "Update Task" : "Add Task"}</button>
         </form>
       )}
 
       {user ? (
   <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {["To-Do", "In Progress", "Done"].map((category) => (
         <SortableContext key={category} items={tasks.filter((t) => t.category === category)} strategy={verticalListSortingStrategy}>
           <TaskCol category={category} tasks={tasks.filter((t) => t.category === category)} onEdit={handleTaskEdit} onDelete={handleTaskDelete} />
@@ -141,8 +149,10 @@ const Home = () => {
 
 
   
-    
+      <Toaster />
+
     </div>
+    
   );
 };
 

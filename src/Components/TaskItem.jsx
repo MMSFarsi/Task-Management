@@ -6,10 +6,10 @@ const TaskItem = ({ task, onEdit, onDelete }) => {
       <h3 className="font-bold">{task.title}</h3>
       <p>{task.description}</p>
       <div className="flex justify-between mt-2">
-        <button onClick={onEdit} className="text-blue-500">
+        <button onClick={onEdit} className="btn bg-black/90  text-blue-500">
           Edit
         </button>
-        <button onClick={onDelete} className="text-red-500">
+        <button onClick={onDelete} className="btn bg-black/90 text-red-500">
           Delete
         </button>
       </div>
